@@ -86,4 +86,15 @@ test('sandbox status survives a new function instance', async () => {
   assert.equal(checked.status, 200);
   assert.equal(checked.body.status, 'SUCCESS');
   assert.equal(checked.body.transactionRefId, 'TX-1');
+  sdk.pay = async () => ({ success: false, message: 'Provider rejected creation' });
+  const rejected = await request(first.handler, 'POST', '/api/orders');
+  assert.equal(rejected.status, 502);
+  assert.match(rejected.body.error, /Provider rejected creation/);
+  assert.equal(first.orders.size, 1);
+
+  sdk.get = async () => ({ success: false, message: 'Order does not exist' });
+  const freshInstance = createApp({ demo: false, sdk });
+  const missing = await request(freshInstance.handler, 'GET', `/api/orders/${created.body.orderId}`);
+  assert.equal(missing.status, 502);
+  assert.match(missing.body.error, /Order does not exist/);
 });

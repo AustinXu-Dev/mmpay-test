@@ -52,6 +52,7 @@ function createApp(options = {}) {
         const result = demo
           ? { orderId, status: 'PENDING', qr: `DEMO-${orderId}`, vendorQrRefId: `DEMO-${orderId.slice(-8)}` }
           : await sdk.pay(payload);
+        if (!demo) validatePaymentResult(result, 'create payment');
         const order = {
           orderId, amount: AMOUNT, currency: CURRENCY, status: result.status ?? 'PENDING',
           qr: result.qr ?? null, vendorQrRefId: result.vendorQrRefId ?? null,
@@ -66,6 +67,7 @@ function createApp(options = {}) {
         if (!order && demo) return json(res, 404, { error: 'Order not found on this server.' });
         if (!demo && (!order || !TERMINAL.has(order.status))) {
           const result = await sdk.get({ orderId: match[1] });
+          validatePaymentResult(result, 'retrieve payment');
           if (result.amount !== AMOUNT || (result.currency && result.currency !== CURRENCY)) {
             return json(res, 502, { error: 'Payment amount or currency mismatch.' });
           }
@@ -85,6 +87,7 @@ function createApp(options = {}) {
         let order = orders.get(qrMatch[1]);
         if (!order && !demo) {
           const result = await sdk.get({ orderId: qrMatch[1] });
+          validatePaymentResult(result, 'retrieve payment QR');
           if (result.amount !== AMOUNT || (result.currency && result.currency !== CURRENCY)) {
             return json(res, 502, { error: 'Payment amount or currency mismatch.' });
           }
@@ -125,10 +128,20 @@ function createApp(options = {}) {
       return json(res, 404, { error: 'Not found.' });
     } catch (error) {
       console.error(error);
-      return json(res, 500, { error: error.message || 'Unexpected server error.' });
+      return json(res, error.statusCode || 500, { error: error.message || 'Unexpected server error.' });
     }
   }
   return { handler, orders };
+}
+
+function validatePaymentResult(result, operation) {
+  if (!result || result instanceof Error || result.success === false ||
+      !['PENDING', ...TERMINAL].includes(result.status)) {
+    const detail = typeof result?.message === 'string' ? result.message : 'No valid payment status returned.';
+    const error = new Error(`MyanMyanPay could not ${operation}. ${detail}`);
+    error.statusCode = 502;
+    throw error;
+  }
 }
 
 function makeSdk() {
