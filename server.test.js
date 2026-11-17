@@ -3,7 +3,12 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { Readable, Writable } = require('node:stream');
-const { createApp } = require('./server');
+const deployedHandler = require('./server');
+const { createApp } = deployedHandler;
+
+test('Vercel entry point exports a request handler', () => {
+  assert.equal(typeof deployedHandler, 'function');
+});
 
 async function request(handler, method, url, value, headers = {}) {
   const chunks = [];

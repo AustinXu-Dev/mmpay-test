@@ -168,4 +168,12 @@ if (require.main === module) {
   http.createServer(handler).listen(port, () => console.log(`Payment tester: http://localhost:${port}`));
 }
 
-module.exports = { createApp };
+// Vercel's Node preset loads this file directly and requires a function export.
+// Keep the app lazy so importing the module does not require sandbox keys.
+let deployedHandler;
+function handleDeployedRequest(req, res) {
+  deployedHandler ??= createApp().handler;
+  return deployedHandler(req, res);
+}
+handleDeployedRequest.createApp = createApp;
+module.exports = handleDeployedRequest;
