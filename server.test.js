@@ -10,6 +10,22 @@ test('Vercel entry point exports a request handler', () => {
   assert.equal(typeof deployedHandler, 'function');
 });
 
+test('Vercel entry point handles API paths directly', async () => {
+  const previous = process.env.DEMO_MODE;
+  process.env.DEMO_MODE = 'true';
+  try {
+    const config = await request(deployedHandler, 'GET', '/api/config');
+    assert.equal(config.status, 200);
+    assert.equal(config.body.amount, 1000);
+    const created = await request(deployedHandler, 'POST', '/api/orders');
+    assert.equal(created.status, 201);
+    assert.equal(created.body.status, 'PENDING');
+  } finally {
+    if (previous === undefined) delete process.env.DEMO_MODE;
+    else process.env.DEMO_MODE = previous;
+  }
+});
+
 async function request(handler, method, url, value, headers = {}) {
   const chunks = [];
   const req = Readable.from(value === undefined ? [] : [JSON.stringify(value)]);
