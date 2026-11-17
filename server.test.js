@@ -49,3 +49,20 @@ test('webhook requires signature and delegates verification to SDK', async () =>
   assert.equal(signed.status, 200);
   assert.equal(listened, true);
 });
+
+test('sandbox status survives a new function instance', async () => {
+  const sdk = {
+    pay: async payload => ({ ...payload, status: 'PENDING', qr: 'sample-qr' }),
+    get: async ({ orderId }) => ({ orderId, amount: 1000, currency: 'MMK', status: 'SUCCESS', qr: 'sample-qr', transactionRefId: 'TX-1' }),
+    onTxCreate() { return this; }, onTxSuccess() { return this; }, onTxFail() { return this; },
+    onTxRefund() { return this; }, onTxCancel() { return this; }, onTxExpire() { return this; },
+    onHeartbeat() { return this; }, on() { return this; }
+  };
+  const first = createApp({ demo: false, sdk });
+  const created = await request(first.handler, 'POST', '/api/orders');
+  const second = createApp({ demo: false, sdk });
+  const checked = await request(second.handler, 'GET', `/api/orders/${created.body.orderId}`);
+  assert.equal(checked.status, 200);
+  assert.equal(checked.body.status, 'SUCCESS');
+  assert.equal(checked.body.transactionRefId, 'TX-1');
+});

@@ -62,22 +62,34 @@ function createApp(options = {}) {
       }
       const match = url.pathname.match(/^\/api\/orders\/(TEST-[a-f0-9-]+)$/);
       if (match && req.method === 'GET') {
-        const order = orders.get(match[1]);
-        if (!order) return json(res, 404, { error: 'Order not found on this server.' });
-        if (!demo && !TERMINAL.has(order.status)) {
-          const result = await sdk.get({ orderId: order.orderId });
+        let order = orders.get(match[1]);
+        if (!order && demo) return json(res, 404, { error: 'Order not found on this server.' });
+        if (!demo && (!order || !TERMINAL.has(order.status))) {
+          const result = await sdk.get({ orderId: match[1] });
           if (result.amount !== AMOUNT || (result.currency && result.currency !== CURRENCY)) {
             return json(res, 502, { error: 'Payment amount or currency mismatch.' });
           }
-          order.status = result.status;
-          order.transactionRefId = result.transactionRefId ?? order.transactionRefId;
-          order.updatedAt = new Date().toISOString();
+          order = {
+            orderId: match[1], amount: AMOUNT, currency: CURRENCY,
+            status: result.status, qr: result.qr ?? order?.qr ?? null,
+            vendorQrRefId: result.vendorQrRefId ?? order?.vendorQrRefId ?? null,
+            transactionRefId: result.transactionRefId ?? order?.transactionRefId ?? null,
+            updatedAt: new Date().toISOString()
+          };
+          orders.set(match[1], order);
         }
         return json(res, 200, order);
       }
       const qrMatch = url.pathname.match(/^\/api\/orders\/(TEST-[a-f0-9-]+)\/qr$/);
       if (qrMatch && req.method === 'GET') {
-        const order = orders.get(qrMatch[1]);
+        let order = orders.get(qrMatch[1]);
+        if (!order && !demo) {
+          const result = await sdk.get({ orderId: qrMatch[1] });
+          if (result.amount !== AMOUNT || (result.currency && result.currency !== CURRENCY)) {
+            return json(res, 502, { error: 'Payment amount or currency mismatch.' });
+          }
+          order = result;
+        }
         if (!order?.qr || demo) return json(res, 404, { error: 'QR not found.' });
         const QRCode = require('qrcode');
         const png = await QRCode.toBuffer(order.qr, { width: 300, margin: 2 });
@@ -138,6 +150,7 @@ function json(res, status, value) {
 }
 
 function readBody(req) {
+  if (req.body !== undefined) return Promise.resolve(typeof req.body === 'string' ? req.body : JSON.stringify(req.body));
   return new Promise((resolve, reject) => {
     let body = '';
     req.on('data', chunk => {
