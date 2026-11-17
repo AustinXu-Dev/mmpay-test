@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MyanMyanPay payment test</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main>
+    <header><span class="eyebrow">MYANMYANPAY · TEST CHECKOUT</span><span id="mode" class="pill">Loading…</span></header>
+    <section class="hero">
+      <div>
+        <h1>Try a payment flow</h1>
+        <p>Create a 1,000 MMK test order. The payment status updates here after the sandbox simulator sends its result.</p>
+      </div>
+      <div class="price"><small>TEST AMOUNT</small><strong>1,000 <span>MMK</span></strong></div>
+    </section>
+    <section class="card" aria-live="polite">
+      <div id="initial">
+        <div class="step">01 / CREATE ORDER</div>
+        <h2>Ready to begin</h2>
+        <p>Each click creates a unique order. No bank app or real payment is needed in sandbox.</p>
+        <button id="create">Create test payment</button>
+      </div>
+      <div id="payment" hidden>
+        <div class="step">02 / PAYMENT STATUS</div>
+        <div class="status-row"><h2 id="status-title">Waiting for payment</h2><span id="status" class="status">PENDING</span></div>
+        <p id="status-help">Use the MyanMyanPay Developer Dashboard to simulate a successful sandbox payment.</p>
+        <div class="details"><span>Order ID</span><code id="order-id"></code><span>QR reference</span><code id="qr-ref"></code><span>Transaction reference</span><code id="tx-ref">—</code></div>
+        <div id="qr-wrap" class="qr-wrap" hidden><img id="qr" alt="Payment QR code"><p>Sandbox QR codes cannot be paid with a real banking app.</p></div>
+        <div class="actions"><button id="refresh" class="secondary">Check status</button><button id="demo-complete" class="secondary" hidden>Simulate success</button><button id="again" class="text-button">New order</button></div>
+      </div>
+      <p id="error" class="error" role="alert" hidden></p>
+    </section>
+    <aside><strong>Tester steps</strong><ol><li>Create a payment here.</li><li>In the <a href="https://developers.myanmyanpay.com/" target="_blank" rel="noopener">Developer Dashboard</a>, open <b>Developers → Sandbox Txn → Pending</b>.</li><li>Select this order and click <b>Do a success callback</b>. Return here to see the status.</li></ol></aside>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

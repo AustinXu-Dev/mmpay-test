@@ -1,0 +1,15 @@
+{
+  "name": "mmpay-flow-test",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Small MyanMyanPay sandbox payment flow tester",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "mmpay-node-sdk": "^1.1.4",
+    "qrcode": "^1.5.4"
+  }
+}
